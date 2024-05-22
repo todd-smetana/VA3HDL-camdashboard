@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Refresh" content="300" />
+    <title>VA3HDL Ham Radio Dashboard</title>
+<!--
+	Hamdash
+	license: MIT
+	https://www.va3hdl.com/projects/hamdash
+
+
+.d8888. d888888b db    db db      d88888b .d8888.
+88'  YP `~~88~~' `8b  d8' 88      88'     88'  YP
+`8bo.      88     `8bd8'  88      88ooooo `8bo.
+  `Y8b.    88       88    88      88~~~~~   `Y8b.
+db   8D    88       88    88booo. 88.     db   8D
+`8888Y'    YP       YP    Y88888P Y88888P `8888Y'
+
+
+-->
+    <style>
+      body {
+        background: black;
+        font-size: 100%;
+      }
+
+      .iframe-container {
+        background-color: black;
+        left: 0px;
+        border: 0px none;
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        overflow: hidden;
+        bottom: 0px;
+        z-index: -2;
+      }
+
+      .img-zoom {
+        background-color: black;
+        left: 0px;
+        border: 0px none;
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        overflow: hidden;
+        bottom: 0px;
+        z-index: -2;
+      }
+
+      /* Style for the fullscreen container (menu options) */
+      .full-screen {
+        height: 100%;
+        border: 0px none;
+        width: 100%;
+        margin-bottom: 0px;
+        margin-left: 0px;
+        -ms-zoom: 1;
+        -moz-transform: scale(1);
+        -moz-transform-origin: 0 0;
+        -o-transform: scale(1);
+        -o-transform-origin: 0 0;
+        -webkit-transform: scale(1);
+        -webkit-transform-origin: 0 0;
+      }
+
+      .default-frame {
+        margin-top: 0px;
+        margin-bottom: 0px;
+        margin-left: 0px;
+        left: 0px;
+        border: 0px none;
+        height: 100%;
+        position: fixed;
+        width: 100%;
+        overflow: hidden;
+        bottom: 0px;
+      }
+
+      .top-bar {
+        display: grid;
+        grid-template-columns: 2fr 1fr 2fr;
+        background-color: #333;
+        color: #fff;
+        padding: 1vh;
+        border: 0px none;
+        overflow: hidden;
+        position: relative;
+        width: auto;
+      }
+
+      .child {
+        position: relative;
+        display: grid;
+        height: 4.2vh;
+        border: 1px solid hsl(210deg 8% 50%);
+        border-radius: 5px;
+        background: hsl(210deg 15% 20%);
+        color: white;
+        font-family: Inconsolata Nerd Font Mono, monospace, Monaco, sans-serif;
+        font-size: 2vw;
+      }
+
+      /* Style for the dashboard container */
+      .dashboard {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-gap: 0px;
+        border: 0px none;
+        margin-bottom: 0px;
+        overflow: hidden;
+        position: relative;
+        width: 100%;
+      }
+
+      /* Style for the image container */
+      .image-container {
+        position: relative;
+        float: inline-start;
+        margin-right: 0px;
+        border: 0px;
+        width: 24.9vw;
+        height: 31vh;
+        overflow: hidden;
+        display: flex;
+        justify-content: center; /* Horizontal centering */
+        align-items: center; /* Vertical centering */
+      }
+
+      /* Style for the image */
+      .image-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* Style for the image titles */
+      .image-title {
+        position: absolute;
+        top: 6%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white; /* font color */
+        background-color: black;
+        font-size: 1.2vw;
+        border-left: 0.25vw solid black;
+        border-right: 0.25vw solid black;
+        font-family: Bebas Neue, monospace, Monaco, sans-serif;
+        padding-top: 4px;
+      }
+
+      /* Style for the full screen image */
+      .image-large {
+        display: block;
+        position: relative;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: 100%;
+      }
+
+      /* Style for the left menu options */
+      .menu {
+        display: grid;
+        /* grid-row: 9 / span 1; /* Update with number of menu items */
+        grid-gap: 3px;
+        position: absolute;
+        width: auto;
+        height: auto;
+        margin-top: 70px;
+        left: 0px;
+        z-index: 2;
+      }
+
+      #mySidenav a {
+        position: relative;
+        float: inline-start;
+        left: -120px;
+        transition: 0.3s;
+        padding-left: 15px;
+        padding-right: 15px;
+        padding-top: 12px;
+        padding-bottom: 8px;
+        width: 100px;
+        text-decoration: none;
+        font-family: Bebas Neue Bold, monospace, Monaco, sans-serif;
+        font-size: 28px;
+        text-align: right;
+        color: white;
+        border-radius: 0 5px 5px 0;
+        box-shadow: 4px 4px 12px rgba(0, 0, 0, 0.5);
+      }
+
+      #mySidenav a:hover {
+        left: 0;
+      }
+    </style>
+  </head>
+  <!--
+.d8888.  .o88b. d8888b. d888888b d8888b. d888888b .d8888.
+88'  YP d8P  Y8 88  `8D   `88'   88  `8D `~~88~~' 88'  YP
+`8bo.   8P      88oobY'    88    88oodD'    88    `8bo.
+  `Y8b. 8b      88`8b      88    88~~~      88      `Y8b.
+db   8D Y8b  d8 88 `88.   .88.   88         88    db   8D
+`8888Y'  `Y88P' 88   YD Y888888P 88         YP    `8888Y'
+
+
+-->
+  <script src="wheelzoom.js"></script>
+
+  <script>
+    // Menu items - Structure is Color code, Option, target URL, scaling 1=Original Size
+    // [color code, menu text, link, scale factor]
+    const aURL = [
+      ["add10d", "BACK", "#", "1"],
+      ["ff9100", "Refresh", "#", "1"],
+      ["0dd1a7", "Help", "#", "1"],
+      ["2196F3", "SD511", "https://www.sd511.org/#&zoom=6.643670548755828&lon=-99.55851272999115&lat=44.234424028697276&threat-forecast&cams&rwis&radar", "1.0"],
+      ["2196F3", "SF CAM", "https://www.arcgis.com/apps/dashboards/fbaac9e7423f41c7a5ebcdbace527e8c", "1"],
+      [
+        "2196F3",
+        "CONTEST",
+        "https://www.contestcalendar.com/fivewkcal.html",
+        "1",
+      ],
+      [
+        "2196F3",
+        "LIGHTNING",
+        "https://map.blitzortung.org/#3.87/36.5/-89.41",
+        "1",
+      ],
+      ["2196F3", "MESONET", "https://climate.sdstate.edu/", "1.2"],
+     
+      [
+        "2196F3",
+        "RADAR",
+        "https://www.windy.com/-Weather-radar-radar?radar,44.807,-96.575,8",
+        "1",
+      ],
+      ["2196F3", "TIME.IS", "https://time.is/", "1"],
+      
+      [
+        "2196F3",
+        "WINDS",
+        "https://earth.nullschool.net/#current/wind/surface/level/orthographic=-100.53,38.01,1478",
+        "1",
+      ],
+    ];
+
+    // Dashboard items - Structure is Title, Image Source URL
+    // [Title, Image Source URL]
+    const aIMG = [
+      ["BKGS MES W", "https://climate.sdstate.edu/pictures/BKMS2/mostrecent1.jpg"],
+      [
+        "BKGS I29N",
+        "https://sd.cdn.iteris-atis.com/camera_images/CSDBKX/1/latest.jpg",
+      ],
+      [
+        "BKGS MESO E",
+        "https://climate.sdstate.edu/pictures/BKMS2/mostrecent2.jpg",
+      ],
+      [
+        "WARD I29N",
+        "https://sd.cdn.iteris-atis.com/camera_images/CSDWRD/0/latest.jpg",
+      ],
+      [
+        "SDSU",
+        "https://campanilecam.sdstate.edu/jpg/1/image.jpg",
+      ],
+      [
+        
+        "BKGS I29S",
+        "https://sd.cdn.iteris-atis.com/camera_images/CSDBKX/2/latest.jpg",
+      ],
+      ["BRANDT I29N", "https://sd.cdn.iteris-atis.com/camera_images/SDBNT/0/latest.jpg"],
+      [
+        "WARD I29S",
+        "https://sd.cdn.iteris-atis.com/camera_images/CSDWRD/1/latest.jpg",
+      ],
+      [
+        "ARLINGTON N",
+        "https://sd.cdn.iteris-atis.com/camera_images/SDARL/0/latest.jpg",
+      ],
+      [
+      "ARLINGTON S",
+        "https://sd.cdn.iteris-atis.com/camera_images/SDARL/1/latest.jpg",
+
+      ],
+      
+      ["BRANDT I29S", "https://sd.cdn.iteris-atis.com/camera_images/SDBNT/1/latest.jpg"],
+     // ["HF PROPAGATION", "https://www.hamqsl.com/solarpich.php"],
+      ["SF PARK", "https://s30.ipcamlive.com/streams/1edcdhkwvxaup9sbt/snapshot.jpg"],
+
+      
+    ];
+
+    // https://www.hamqsl.com/solar100sc.php
+    // https://www.hamqsl.com/solarbc.php
+    // https://www.hamqsl.com/solarpich.php
+
+    var largeShow = 0;
+
+    // This function shows the embedded websites
+    function MenuOpt(num) {
+      document.getElementById("FullScreen").style.display = "block";
+      document.getElementById("iFrameContainer").style.zIndex = 1;
+      document.getElementById("FullScreen").src = aURL[num][2];
+      document.getElementById("FullScreen").style.transform =
+        "scale(" + aURL[num][3] + ")";
+      if (num == 0) {
+        wheelzoom(document.querySelectorAll("img"));
+      } else if (num == 1) {
+        location.reload(true);
+      } else if (num == 2) {
+        alert(`Double click on an image to expand to full screen.
+Double click again to close full screen view.
+The content refreshes automatically every 5 minutes.
+`);
+      }
+    }
+
+    // This function shows the larger images when double click to enlarge
+    function larger(event) {
+      var targetElement = event.target || event.srcElement;
+      if (largeShow == 1) {
+        largeShow = 0;
+        document.getElementById("imgZoom").style.display = "none";
+        document.getElementById("imgZoom").style.zIndex = -2;
+      } else {
+        largeShow = 1;
+        document.getElementById("imgZoom").style.display = "block";
+        document.getElementById("imgZoom").style.zIndex = 3;
+        document.getElementById("ImageLarge").src =
+          targetElement.style.backgroundImage
+            .replace(/^url\(["']?/, "")
+            .replace(/["']?\)$/, "");
+      }
+    }
+
+    function start() {
+      // Get the parent div for Menu container
+      var parentDiv = document.getElementById("myMenu");
+      // Append the new div to the parent div
+      aURL.forEach(function (innerArray, index) {
+        // Create a new div element
+        var newDiv = document.createElement("div");
+        // Set some properties for the new div
+        newDiv.id = "mySidenav";
+        newDiv.className = "sidenav";
+        newDiv.innerHTML = `<a href="#" style="background-color:#${innerArray[0]};" onclick="MenuOpt(${index})">${innerArray[1]}</a>`;
+        parentDiv.appendChild(newDiv);
+      });
+
+      // Get the parent div for Dashboard container
+      var parentDiv = document.getElementById("dash");
+      // Append the new div to the parent div
+      aIMG.forEach(function (innerArray, index) {
+        // Create a new div element
+        var newDiv = document.createElement("div");
+        // Set some properties for the new div
+        newDiv.className = "image-container";
+        // Create a new img element
+        var newImg = document.createElement("img");
+        newImg.id = `"Image${index}"`;
+        newImg.src = innerArray[1];
+        newImg.ondblclick = larger;
+        parentDiv.appendChild(newDiv);
+        newDiv.appendChild(newImg);
+        // Create a new div element for img title
+        var newTtl = document.createElement("div");
+        newTtl.className = "image-title";
+        newTtl.innerHTML = innerArray[0];
+        newDiv.appendChild(newTtl);
+      });
+
+      // assign wheelzoom functionality to all 12 images
+      wheelzoom(document.querySelectorAll("img"));
+
+      window.addEventListener("resize", function () {
+        "use strict";
+        window.location.reload();
+      });
+    }
+
+    // This function update the time on the top bar
+    function updateTopBar() {
+      const now = new Date();
+
+      const options = { weekday: "long", month: "long", day: "numeric" };
+
+      const localDate = now.toLocaleDateString("en-US", options);
+      const localTime = now.toLocaleTimeString("en-US", {
+        hour12: true,
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        timeZoneName: "short",
+      });
+
+      const utcDate = now.toISOString().slice(0, 10);
+      const utcTime = now.toISOString().slice(11, 19) + " UTC";
+
+      const topBarLeft = document.getElementById("topBarLeft");
+      topBarLeft.textContent = `${localDate} - ${localTime}`;
+      const topBarCenter = document.getElementById("topBarCenter");
+      topBarCenter.textContent = `KF0AIT - EN14oh`;
+      const topBarRight = document.getElementById("topBarRight");
+      topBarRight.textContent = `${utcDate} ${utcTime}`;
+    }
+
+    // Update every second
+    setInterval(updateTopBar, 1000);
+
+    // Initial call to update
+    updateTopBar();
+  </script>
+  <!--
+d8888b.  .d88b.  d8888b. db    db
+88  `8D .8P  Y8. 88  `8D `8b  d8'
+88oooY' 88    88 88   88  `8bd8'
+88~~~b. 88    88 88   88    88
+88   8D `8b  d8' 88  .8D    88
+Y8888P'  `Y88P'  Y8888D'    YP
+
+
+-->
+  <body onload="start()">
+    <div id="iFrameContainer" class="iframe-container">
+      <iframe
+        class="full-screen"
+        id="FullScreen"
+        src=""
+        title="Zoom"
+        scrolling="no"
+      ></iframe>
+    </div>
+
+    <div id="imgZoom" class="img-zoom">
+      <img
+        class="image-large"
+        id="ImageLarge"
+        alt="pic"
+        ondblclick="larger(event);"
+      />
+    </div>
+
+    <div id="myMenu" class="menu">
+      <!-- Menu container -->
+    </div>
+
+    <div id="defaultFrame" class="default-frame">
+      <div class="top-bar">
+        <div
+          id="topBarLeft"
+          class="child"
+          style="text-align: left; padding-left: 7px; color: blanchedalmond"
+        ></div>
+        <div
+          id="topBarCenter"
+          class="child"
+          style="text-align: center; color: rgb(0, 119, 255)"
+        ></div>
+        <div
+          id="topBarRight"
+          class="child"
+          style="text-align: right; padding-right: 5px; color: aquamarine"
+        ></div>
+      </div>
+      <div id="dash" class="dashboard">
+        <!-- Images container -->
+      </div>
+    </div>
+  </body>
+</html>
